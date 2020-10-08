@@ -14,6 +14,6 @@ class TestGetModel:
         assert model(x).size() == torch.Size([16, 10])
 
         # test wideresnet-40-2
-        model = get_model("wideresnet40", num_classes=10, widening_factor=2)
+        model = get_model("wideresnet40", num_classes=10)
         x = torch.randn(16, 3, 32, 32)
         assert model(x).size() == torch.Size([16, 10])
