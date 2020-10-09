@@ -4,18 +4,17 @@ from .base import MixAugmentationBase
 
 
 class CutMix(MixAugmentationBase):
-    def __init__(self,
-                 criterion: torch.nn.modules.loss._Loss,
-                 alpha: float,
-                 prob: float):
-        self.criterion = criterion
+    def __init__(self, alpha: float, prob: float):
         self.alpha = alpha
         self.prob = prob
 
-    def __call__(self,
-                 model: torch.nn.Module,
-                 x: torch.Tensor,
-                 t: torch.Tensor):
+    def __call__(
+        self,
+        model: torch.nn.Module,
+        criterion: torch.nn.modules.loss._Loss,
+        x: torch.Tensor,
+        t: torch.Tensor,
+    ):
         """
         CutMix (https://arxiv.org/abs/1905.04899) imprementation.
         Some parts of code is borrowed from https://github.com/clovaai/CutMix-PyTorch/blob/master/train.py.
@@ -41,11 +40,11 @@ class CutMix(MixAugmentationBase):
 
             # compute output
             output = model(x)
-            loss = self._calc_mixed_loss(output, t, rand_index, lam, self.criterion)
+            loss = self._calc_mixed_loss(output, t, rand_index, lam, criterion)
         else:
             # compute output
             output = model(x)
-            loss = self.criterion(output, t)
+            loss = criterion(output, t)
 
         retdict = dict(x=x.detach(), output=output.detach(), loss=loss.detach().item())
         return loss, retdict

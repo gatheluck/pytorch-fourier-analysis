@@ -17,10 +17,10 @@ if __name__ == "__main__":
     loader = torch.utils.data.DataLoader(dataset, shuffle=False, batch_size=32)
     criterion = torch.nn.CrossEntropyLoss()
 
-    mixaugment = augmentations.CutMix(criterion=criterion, alpha=1.0, prob=1.0)
+    mixaugment = augmentations.CutMix(alpha=1.0, prob=1.0)
 
     for x, t in loader:
-        loss, retdict = mixaugment(model, x, t)
+        loss, retdict = mixaugment(model, criterion, x, t)
         print(loss)
         print(retdict["output"].shape)
         print(retdict["x"].shape)
