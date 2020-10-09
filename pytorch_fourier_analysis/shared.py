@@ -4,7 +4,7 @@ import omegaconf
 import functools
 import torch
 import torchvision
-from typing import List, Any
+from typing import Any, List, Tuple
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from pytorch_fourier_analysis import models
@@ -41,9 +41,13 @@ def get_dataset_class(name: str, root: str, train: bool):
 
     if name in _built_in_datasets:
         if name == "cifar10":
-            dataset_class = functools.partial(torchvision.datasets.CIFAR10, root=root, train=train, download=True)
+            dataset_class = functools.partial(
+                torchvision.datasets.CIFAR10, root=root, train=train, download=True
+            )
         elif name == "cifar100":
-            dataset_class = functools.partial(torchvision.datasets.CIFAR100, root=root, train=train, download=True)
+            dataset_class = functools.partial(
+                torchvision.datasets.CIFAR100, root=root, train=train, download=True
+            )
         else:
             raise NotImplementedError
 
@@ -138,3 +142,32 @@ def get_scheduler_class(
         raise NotImplementedError
 
     return functools.partial(scheduler_class, **_cfg)
+
+
+def calc_error(
+    output: torch.Tensor, target: torch.Tensor, topk: Tuple[int] = (1,)
+) -> List[torch.Tensor]:
+    """
+    Calculate top-k errors.
+
+    Args
+        output:
+        target:
+        topk:
+    """
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(
+        maxk, dim=1
+    )  # return the k larget elements. top-k index: size (b, k).
+    pred = pred.t()  # (k, b)
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    errors = list()
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+        wrong_k = batch_size - correct_k
+        errors.append(wrong_k.mul_(100.0 / batch_size))
+
+    return errors
