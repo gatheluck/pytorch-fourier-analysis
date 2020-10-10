@@ -74,8 +74,16 @@ def main(cfg: omegaconf.DictConfig) -> None:
     optimizer_class = shared.get_optimizer_class(cfg.optimizer)
     scheduler_class = shared.get_scheduler_class(cfg.scheduler)
 
+    # setup mix augmentation
+    mixaugment = shared.get_mixaugment(cfg.mixaugment)
+
     # train
-    litmodel = ClassificationModel(model, optimizer_class, scheduler_class)
+    criterion = torch.nn.CrossEntropyLoss()
+    litmodel = ClassificationModel(model,
+                                   criterion,
+                                   mixaugment,
+                                   optimizer_class,
+                                   scheduler_class)
     trainer.fit(litmodel, train_dataloader, val_dataloader)
 
 
