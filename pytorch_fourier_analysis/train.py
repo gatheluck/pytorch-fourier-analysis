@@ -59,11 +59,15 @@ def main(cfg: omegaconf.DictConfig) -> None:
     val_transform = shared.get_transform(
         cfg.dataset.input_size, cfg.dataset.mean, cfg.dataset.std, train=False
     )
+
+    dataset_root = os.path.join(
+        hydra.utils.get_original_cwd(), "../data"
+    )  # this is needed because hydra automatically change working directory.
     train_dataset_class = shared.get_dataset_class(
-        cfg.dataset.name, root="../data", train=True
+        cfg.dataset.name, root=dataset_root, train=True
     )
     val_dataset_class = shared.get_dataset_class(
-        cfg.dataset.name, root="../data", train=False
+        cfg.dataset.name, root=dataset_root, train=False
     )
 
     train_dataset = train_dataset_class(transform=train_transform)
@@ -84,11 +88,9 @@ def main(cfg: omegaconf.DictConfig) -> None:
 
     # train
     criterion = torch.nn.CrossEntropyLoss()
-    litmodel = ClassificationModel(model,
-                                   criterion,
-                                   mixaugment,
-                                   optimizer_class,
-                                   scheduler_class)
+    litmodel = ClassificationModel(
+        model, criterion, mixaugment, optimizer_class, scheduler_class
+    )
     trainer.fit(litmodel, train_dataloader, val_dataloader)
 
 
