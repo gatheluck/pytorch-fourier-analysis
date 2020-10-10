@@ -1,7 +1,5 @@
-arch: wideresnet40
 epochs: 100
 batch_size: 128
-num_workers: 8
 num_nodes: 1
 distributed_backend: dp
 checkpoint_monitor: val_err1_avg
