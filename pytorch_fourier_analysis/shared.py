@@ -9,7 +9,7 @@ from typing import Any, List, Tuple, Union
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from pytorch_fourier_analysis import models
 from pytorch_fourier_analysis import mixaugments
-from pytorch_fourier_analysis.augmentatons.base import MixAugmentationBase
+from pytorch_fourier_analysis.mixaugments.base import MixAugmentationBase
 
 
 def get_model(name: str, num_classes: int, inplace: bool = True) -> torch.nn.Module:
@@ -40,21 +40,22 @@ def save_model(model: torch.nn.Module, path: str) -> None:
 
 def get_dataset_class(name: str, root: str, train: bool):
     _built_in_datasets = set(["cifar10", "cifar100"])
+    _root = os.path.join(root, name)
 
     if name in _built_in_datasets:
         if name == "cifar10":
             dataset_class = functools.partial(
-                torchvision.datasets.CIFAR10, root=root, train=train, download=True
+                torchvision.datasets.CIFAR10, root=_root, train=train, download=True
             )
         elif name == "cifar100":
             dataset_class = functools.partial(
-                torchvision.datasets.CIFAR100, root=root, train=train, download=True
+                torchvision.datasets.CIFAR100, root=_root, train=train, download=True
             )
         else:
             raise NotImplementedError
 
     else:
-        _root = os.path.join(root, "train" if train else "val")
+        _root = os.path.join(_root, "train" if train else "val")
         dataset_class = functools.partial(torchvision.datasets.ImageFolder, root=_root)
 
     return dataset_class
@@ -147,7 +148,7 @@ def get_scheduler_class(
 
 
 def get_mixaugment(cfg: omegaconf.DictConfig) -> Union[None, MixAugmentationBase]:
-    _cfg = omegaconf.Omegaconf.to_container(cfg)
+    _cfg = omegaconf.OmegaConf.to_container(cfg)
     name = _cfg.pop("name")  # without pop raise KeyError.
 
     if name is None:
