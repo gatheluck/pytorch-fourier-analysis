@@ -4,10 +4,12 @@ import omegaconf
 import functools
 import torch
 import torchvision
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Union
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from pytorch_fourier_analysis import models
+from pytorch_fourier_analysis import augmentations
+from pytorch_fourier_analysis.augmentatons.base import MixAugmentationBase
 
 
 def get_model(name: str, num_classes: int, inplace: bool = True) -> torch.nn.Module:
@@ -142,6 +144,20 @@ def get_scheduler_class(
         raise NotImplementedError
 
     return functools.partial(scheduler_class, **_cfg)
+
+
+def get_mixaugment(cfg: omegaconf.DictConfig) -> Union[None, MixAugmentationBase]:
+    _cfg = omegaconf.Omegaconf.to_container(cfg)
+    name = _cfg.pop("name")  # without pop raise KeyError.
+
+    if name is None:
+        mixaugment = None
+    elif name == "cutmix":
+        mixaugment = augmentations.CutMix(**_cfg)
+    else:
+        raise NotImplementedError
+
+    return mixaugment
 
 
 def calc_error(
