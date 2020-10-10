@@ -1,6 +1,9 @@
 import omegaconf
+import itertools
+import torch
+from torch import Tensor
 import pytorch_lightning as pl
-from typing import List
+from typing import Dict, List, Union
 
 
 def get_loggers(
@@ -43,3 +46,31 @@ def cfg_to_tags(cfg: omegaconf.DictConfig) -> List[str]:
                 pass
 
     return tags
+
+
+def get_epoch_end_log(
+    outputs: Union[List[Dict[str, Tensor]], List[List[Dict[str, Tensor]]]]
+) -> Dict[str, Tensor]:
+    """
+    Fill the gap between single theread and data.parallel.
+    Form of outputs is List[Dict[str, Tensor]] or List[List[Dict[str, Tensor]]]
+
+    Args
+        output: Output list from training step.
+    """
+    log = dict()
+
+    # if list is nested, flatten them.
+    if type(outputs[0]) is list:
+        outputs = [x for x in itertools.chain(*outputs)]
+
+    if "log" in outputs[0].keys():
+        for key in outputs[0]["log"].keys():
+            val = torch.stack([x["log"][key] for x in outputs]).mean().cpu()  # .item()
+            log[key + "_avg"] = val
+    else:
+        for key in outputs[0].keys():
+            val = torch.stack([x[key] for x in outputs]).mean().cpu()  # .item()
+            log[key + "_avg"] = val
+
+    return log
