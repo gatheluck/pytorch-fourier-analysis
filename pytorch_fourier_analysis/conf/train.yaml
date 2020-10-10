@@ -1,0 +1,11 @@
+defaults:
+  - misc/misc_train
+  - dataset: cifar10
+  - mixaugment: none
+  - optimizer: sgd
+  - scheduler: cosinlr
+
+
+hydra:
+  run:
+    dir: ../logs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
