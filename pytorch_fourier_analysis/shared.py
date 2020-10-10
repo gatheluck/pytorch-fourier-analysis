@@ -151,23 +151,24 @@ def calc_error(
     Calculate top-k errors.
 
     Args
-        output:
-        target:
-        topk:
+        output: Output tensor from model.
+        target: Training target tensor.
+        topk: Tuple of int which you want to now error.
     """
-    maxk = max(topk)
-    batch_size = target.size(0)
+    with torch.no_grad():
+        maxk = max(topk)
+        batch_size = target.size(0)
 
-    _, pred = output.topk(
-        maxk, dim=1
-    )  # return the k larget elements. top-k index: size (b, k).
-    pred = pred.t()  # (k, b)
-    correct = pred.eq(target.view(1, -1).expand_as(pred))
+        _, pred = output.topk(
+            maxk, dim=1
+        )  # return the k larget elements. top-k index: size (b, k).
+        pred = pred.t()  # (k, b)
+        correct = pred.eq(target.view(1, -1).expand_as(pred))
 
-    errors = list()
-    for k in topk:
-        correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
-        wrong_k = batch_size - correct_k
-        errors.append(wrong_k.mul_(100.0 / batch_size))
+        errors = list()
+        for k in topk:
+            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+            wrong_k = batch_size - correct_k
+            errors.append(wrong_k.mul_(100.0 / batch_size))
 
-    return errors
+        return errors
