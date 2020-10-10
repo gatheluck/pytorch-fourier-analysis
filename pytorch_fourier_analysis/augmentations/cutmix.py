@@ -46,7 +46,7 @@ class CutMix(MixAugmentationBase):
             output = model(x)
             loss = criterion(output, t)
 
-        retdict = dict(x=x.detach(), output=output.detach(), loss=loss.detach().item())
+        retdict = dict(x=x.detach(), output=output.detach(), loss=loss.detach())
         return loss, retdict
 
     def _rand_bbox(self, size: torch.Size, lam: float):
