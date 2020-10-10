@@ -1,4 +1,5 @@
 defaults:
+  - misc/misc_shared
   - misc/misc_train
   - dataset: cifar10
   - mixaugment: none
