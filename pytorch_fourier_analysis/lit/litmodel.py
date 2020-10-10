@@ -1,6 +1,7 @@
 import os
 import sys
 import torch
+import torchvision
 import pytorch_lightning as pl
 from typing import Union
 
@@ -44,6 +45,10 @@ class ClassificationModel(pl.LightningModule):
             output = self.model(x)
             loss = self.criterion(output, t)
             retdict = dict(x=x.detach(), output=output.detach(), loss=loss.detach())
+
+        # save sample input
+        if batch_idx == 1:
+            torchvision.utils.save_image(retdict["x"][:32], "train_img_sample.png")
 
         # calculate error and create log dict.
         err1, err5 = calc_error(retdict["output"], t.detach(), topk=(1, 5))
