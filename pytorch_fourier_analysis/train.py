@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 import hydra
 import omegaconf
 import torch
@@ -10,10 +11,14 @@ from pytorch_fourier_analysis import shared, lit
 from pytorch_fourier_analysis.lit import LitTrainerCallback, ClassificationModel
 
 
+@hydra.main(config_path="./conf/train.yaml")
 def main(cfg: omegaconf.DictConfig) -> None:
     """
     Entry point function for training models.
     """
+    # show config
+    logging.info(cfg.pretty())
+
     # setup loggers
     api_key = os.environ.get("ONLINE_LOGGER_API_KEY")
     loggers = lit.get_loggers(cfg, api_key)
@@ -62,7 +67,7 @@ def main(cfg: omegaconf.DictConfig) -> None:
     )
 
     train_dataset = train_dataset_class(transform=train_transform)
-    val_dataset = val_dataset_class(transfrom=val_transform)
+    val_dataset = val_dataset_class(transform=val_transform)
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, cfg.batch_size, shuffle=True, num_workers=cfg.num_workers
     )
