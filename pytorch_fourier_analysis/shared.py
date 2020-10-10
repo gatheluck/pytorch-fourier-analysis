@@ -8,7 +8,7 @@ from typing import Any, List, Tuple, Union
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from pytorch_fourier_analysis import models
-from pytorch_fourier_analysis import augmentations
+from pytorch_fourier_analysis import mixaugments
 from pytorch_fourier_analysis.augmentatons.base import MixAugmentationBase
 
 
@@ -153,7 +153,7 @@ def get_mixaugment(cfg: omegaconf.DictConfig) -> Union[None, MixAugmentationBase
     if name is None:
         mixaugment = None
     elif name == "cutmix":
-        mixaugment = augmentations.CutMix(**_cfg)
+        mixaugment = mixaugments.CutMix(**_cfg)
     else:
         raise NotImplementedError
 

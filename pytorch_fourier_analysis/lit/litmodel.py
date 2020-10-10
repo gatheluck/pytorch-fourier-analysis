@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 from typing import Union
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from pytorch_fourier_analysis.augmentations.base import MixAugmentationBase
+from pytorch_fourier_analysis.mixaugments.base import MixAugmentationBase
 from pytorch_fourier_analysis.lit.logger import get_epoch_end_log
 from pytorch_fourier_analysis.shared import calc_error
 

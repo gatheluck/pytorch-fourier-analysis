@@ -3,7 +3,7 @@ import sys
 import torch
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from pytorch_fourier_analysis import augmentations
+from pytorch_fourier_analysis import mixaugments
 
 
 if __name__ == "__main__":
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     loader = torch.utils.data.DataLoader(dataset, shuffle=False, batch_size=32)
     criterion = torch.nn.CrossEntropyLoss()
 
-    mixaugment = augmentations.CutMix(alpha=1.0, prob=1.0)
+    mixaugment = mixaugments.CutMix(alpha=1.0, prob=1.0)
 
     for x, t in loader:
         loss, retdict = mixaugment(model, criterion, x, t)

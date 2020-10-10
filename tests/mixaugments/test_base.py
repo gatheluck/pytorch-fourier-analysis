@@ -3,7 +3,7 @@ import sys
 import torch
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from pytorch_fourier_analysis import augmentations
+from pytorch_fourier_analysis import mixaugments
 
 
 class TestMixAugmentationBase:
@@ -16,17 +16,17 @@ class TestMixAugmentationBase:
         ce_loss_a = criterion(output, t)
         ce_loss_b = criterion(output, t[rand_index])
         assert (
-            augmentations.MixAugmentationBase()
+            mixaugments.MixAugmentationBase()
             ._calc_mixed_loss(output, t, rand_index, 1.0, criterion)
             .equal(ce_loss_a)
         )
         assert (
-            augmentations.MixAugmentationBase()
+            mixaugments.MixAugmentationBase()
             ._calc_mixed_loss(output, t, rand_index, 0.0, criterion)
             .equal(ce_loss_b)
         )
         assert (
-            augmentations.MixAugmentationBase()
+            mixaugments.MixAugmentationBase()
             ._calc_mixed_loss(output, t, rand_index, 0.5, criterion)
             .equal((0.5 * ce_loss_a) + (0.5 * ce_loss_b))
         )
