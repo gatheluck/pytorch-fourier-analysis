@@ -1,9 +1,12 @@
 import os
 import sys
+import re
+import logging
 import omegaconf
 import functools
 import torch
 import torchvision
+from collections import OrderedDict
 from typing import Any, List, Tuple, Union
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -36,6 +39,29 @@ def save_model(model: torch.nn.Module, path: str) -> None:
         else model.state_dict(),
         path,
     )
+
+
+def load_model(model, path):
+    if not os.path.exists(path):
+        raise FileNotFoundError('path "{path}" does not exist.'.format(path=path))
+    logging.info("loading model weight from {path}".format(path=path))
+
+    # load weight from .pth file.
+    if path.endswith(".pth"):
+        weight = torch.load(path)
+        statedict = OrderedDict(
+            [(re.sub("^module.", "", k), v) for k, v in weight.items()]
+        )
+        model.load_state_dict(statedict)
+    # load weight from checkpoint.
+    elif path.endswith(".ckpt"):
+        checkpoint = torch.load(path)
+        if "state_dict" in checkpoint.keys():
+            model.load_state_dict(checkpoint["state_dict"], strict=False)
+        else:
+            raise ValueError("this checkponint do not inculdes state_dict")
+    else:
+        raise ValueError("path is not supported type of extension.")
 
 
 def get_dataset_class(name: str, root: str, train: bool):
