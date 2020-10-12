@@ -66,9 +66,23 @@ def eval_cifar(
 
     df = pd.DataFrame(columns=["corruption", "err1", "err5"])
 
-    with tqdm(total=len(corruptions), ncols=80) as pbar:
+    with tqdm(total=len(corruptions) + 1, ncols=80) as pbar:
+        # eval clean error
+        loader = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=8,
+            pin_memory=True,
+        )
+        mean_err1, mean_err5 = calc_mean_error(model, loader, device)
+        clean_result = dict(corruption="clean", err1=mean_err1, err5=mean_err5)
+        pbar.set_postfix(clean_result)
+        pbar.update()
+
+        # eval corruption error
         for i, corruption_type in enumerate(corruptions):
-            # replace clean cifar to currupted one.
+            # replace clean cifar to currupted one
             dataset.data = np.load(os.path.join(root, name, corruption_type + ".npy"))
             dataset.targets = torch.LongTensor(
                 np.load(os.path.join(root, name, "labels.npy"))
@@ -85,23 +99,27 @@ def eval_cifar(
             mean_err1, mean_err5 = calc_mean_error(model, loader, device)
 
             # append to dataframe
-            results = dict(corruption=corruption_type, err1=mean_err1, err5=mean_err5)
-            df = df.append(results, ignore_index=True)
-            pbar.set_postfix(results)
+            result = dict(corruption=corruption_type, err1=mean_err1, err5=mean_err5)
+            df = df.append(result, ignore_index=True)
+            pbar.set_postfix(result)
             pbar.update()
 
-    mean_result = dict(
-        corruption="mean", err1=df["err1"].mean(), err5=df["err5"].mean()
-    )
-    df_wo_noise = df[~df["corruption"].str.endswith("_noise")]
-    mean_result_wo_noise = dict(
-        corruption="mean_wo_noise",
-        err1=df_wo_noise["err1"].mean(),
-        err5=df_wo_noise["err5"].mean(),
-    )
+        # calculate mean result
+        mean_result = dict(
+            corruption="mean", err1=df["err1"].mean(), err5=df["err5"].mean()
+        )
+        df_wo_noise = df[~df["corruption"].str.endswith("_noise")]
+        mean_result_wo_noise = dict(
+            corruption="mean_wo_noise",
+            err1=df_wo_noise["err1"].mean(),
+            err5=df_wo_noise["err5"].mean(),
+        )
 
-    df = df.append(mean_result, ignore_index=True)
-    df = df.append(mean_result_wo_noise, ignore_index=True)
+        df = df.append(mean_result, ignore_index=True)
+        df = df.append(mean_result_wo_noise, ignore_index=True)
+        df = df.append(
+            clean_result, ignore_index=True
+        )  # append here to prevent having effect to mean result
     return df
 
 
