@@ -1,0 +1,4 @@
+mixaugment:
+  name: cutout
+  prob: 0.5
+  cutout_size: 16

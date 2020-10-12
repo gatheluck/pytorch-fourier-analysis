@@ -181,6 +181,8 @@ def get_mixaugment(cfg: omegaconf.DictConfig) -> Union[None, MixAugmentationBase
         mixaugment = None
     elif name == "cutmix":
         mixaugment = mixaugments.CutMix(**_cfg)
+    elif name == "cutout":
+        mixaugment = mixaugments.Cutout(**_cfg)
     elif name == "mixup":
         mixaugment = mixaugments.Mixup(**_cfg)
     else:
