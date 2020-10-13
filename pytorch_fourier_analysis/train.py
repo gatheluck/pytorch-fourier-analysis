@@ -1,6 +1,8 @@
 import os
 import sys
 import logging
+import functools
+
 import hydra
 import omegaconf
 import torch
@@ -79,9 +81,17 @@ def main(cfg: omegaconf.DictConfig) -> None:
         val_dataset, cfg.batch_size, shuffle=False, num_workers=cfg.num_workers
     )
 
+    # make cosin_anealing lambda function. this is needed for manual cosin annealing.
+    cosin_annealing_func = functools.partial(
+        shared.cosin_annealing,
+        total_steps=cfg.epochs * len(train_dataloader),
+        lr_max=1.0,
+        lr_min=1e-6 / cfg.optimizer.lr,
+    )
+
     # setup optimizer
     optimizer_class = shared.get_optimizer_class(cfg.optimizer)
-    scheduler_class = shared.get_scheduler_class(cfg.scheduler)
+    scheduler_class = shared.get_scheduler_class(cfg.scheduler, cosin_annealing_func)
 
     # setup mix augmentation
     mixaugment = shared.get_mixaugment(cfg.mixaugment)

@@ -2,12 +2,14 @@ import os
 import sys
 import re
 import logging
-import omegaconf
 import functools
-import torch
-import torchvision
 from collections import OrderedDict
 from typing import Any, List, Tuple, Union
+
+import omegaconf
+import numpy as np
+import torch
+import torchvision
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from pytorch_fourier_analysis import models
@@ -158,7 +160,7 @@ def get_optimizer_class(cfg: omegaconf.DictConfig) -> torch.optim.Optimizer:
 
 
 def get_scheduler_class(
-    cfg: omegaconf.DictConfig,
+    cfg: omegaconf.DictConfig, cosin_annealing_func=None
 ) -> torch.optim.lr_scheduler._LRScheduler:
     _cfg = omegaconf.OmegaConf.to_container(cfg)
     name = _cfg.pop("name")  # without pop raise KeyError.
@@ -167,6 +169,11 @@ def get_scheduler_class(
         scheduler_class = torch.optim.lr_scheduler.MultiStepLR
     elif name == "cosinlr":
         scheduler_class = torch.optim.lr_scheduler.CosineAnnealingLR
+    elif name == "cosin_annealing":
+        scheduler_class = torch.optim.lr_scheduler.LambdaLR
+        scheduler_class = functools.partial(
+            scheduler_class, lr_lambda=cosin_annealing_func
+        )
     else:
         raise NotImplementedError
 
@@ -219,3 +226,7 @@ def calc_error(
             errors.append(wrong_k.mul_(100.0 / batch_size))
 
         return errors
+
+
+def cosin_annealing(step: int, total_steps: int, lr_max: float, lr_min: float) -> float:
+    return lr_min + (lr_max - lr_min) * 0.5 * (1.0 + np.cos(step / total_steps * np.pi))
