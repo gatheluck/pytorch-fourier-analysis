@@ -51,14 +51,14 @@ def eval_cifar(
     Evaluate corruption error by CIFAR-C dataset.
 
     Args
-        name: Name of dataset. (cifar10-c or cifar100-c)
-        model: Pretrained model.
-        root: Root path to dataset.
-        transform: Transform applied to cifar-c dataset.
-        batch_size: Size of batch.
-        savedir: Directory for saving results.
-        device: Device whuich data is sent. (cup or cuda)
-        corruptions: Considering corruptions.
+        name: Name of dataset (cifar10-c or cifar100-c)
+        model: Pretrained model
+        root: Root path to dataset
+        transform: Transform applied to cifar-c dataset
+        batch_size: Size of batch
+        savedir: Directory for saving results
+        device: Device whuich data is sent (cpu or cuda)
+        corruptions: Considering corruptions
     """
     # setup clean cifar dataset.
     dataset_class = shared.get_dataset_class(name.rstrip("-c"), root=root, train=False)
@@ -123,6 +123,94 @@ def eval_cifar(
     return df
 
 
+def eval_imagenet(
+    model: torch.nn.Module,
+    root: str,
+    transform: torchvision.transforms.transforms.Compose,
+    batch_size: int,
+    savedir: str,
+    device: str,
+    corruptions: Iterable[str],
+) -> pd.DataFrame:
+    """
+    Evaluate corruption error by ImageNet-C dataset.
+
+    Args
+        model: Pretrained model
+        root: Root path to dataset
+        transform: Transform applied to cifar-c dataset
+        batch_size: Size of batch
+        savedir: Directory for saving results
+        device: Device whuich data is sent (cpu or cuda)
+        corruptions: Considering corruptions
+    """
+    # setup clean imagenet dataset.
+    dataset_class = shared.get_dataset_class("imagenet", root=root, train=False)
+    dataset = dataset_class(transform=transform)
+
+    df = pd.DataFrame(columns=["corruption", "err1", "err5"])
+
+    with tqdm(total=len(corruptions) + 1, ncols=80) as pbar:
+        # eval clean error
+        loader = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=8,
+            pin_memory=True,
+        )
+        mean_err1, mean_err5 = calc_mean_error(model, loader, device)
+        clean_result = dict(corruption="clean", err1=mean_err1, err5=mean_err5)
+        pbar.set_postfix(clean_result)
+        pbar.update()
+
+        # eval corruption error
+        for i, corruption_type in enumerate(corruptions):
+            err1_list, err5_list = list(), list()
+            for j in range(1, 6):  # imagenet-c dataset is separated to 5 small sets.
+                datasetpath = os.path.join(root, "imagenet-c", corruption_type, str(j))
+                dataset = torchvision.datasets.ImageFolder(datasetpath, transform)
+                loader = torch.utils.data.DataLoader(
+                    dataset,
+                    batch_size=batch_size,
+                    shuffle=False,
+                    num_workers=8,
+                    pin_memory=True,
+                )
+
+                mean_err1, mean_err5 = calc_mean_error(model, loader, device)
+                err1_list.append(mean_err1)
+                err5_list.append(mean_err5)
+
+            # append to dataframe
+            result = dict(
+                corruption=corruption_type,
+                err1=sum(err1_list) / float(len(err1_list)),
+                err5=sum(mean_err5) / float(len(err5_list)),
+            )
+            df = df.append(result, ignore_index=True)
+            pbar.set_postfix(result)
+            pbar.update()
+
+        # calculate mean result
+        mean_result = dict(
+            corruption="mean", err1=df["err1"].mean(), err5=df["err5"].mean()
+        )
+        df_wo_noise = df[~df["corruption"].str.endswith("_noise")]
+        mean_result_wo_noise = dict(
+            corruption="mean_wo_noise",
+            err1=df_wo_noise["err1"].mean(),
+            err5=df_wo_noise["err5"].mean(),
+        )
+
+        df = df.append(mean_result, ignore_index=True)
+        df = df.append(mean_result_wo_noise, ignore_index=True)
+        df = df.append(
+            clean_result, ignore_index=True
+        )  # append here to prevent having effect to mean result
+    return df
+
+
 def create_barplot(errs: Dict[str, float], title: str, savepath: str):
     y = list(errs.values())
     x = np.arange(len(y))
@@ -148,6 +236,9 @@ def create_barplot(errs: Dict[str, float], title: str, savepath: str):
 
 @hydra.main(config_path="../conf/corruption.yaml")
 def main(cfg: omegaconf.DictConfig) -> None:
+    """
+    Main entry point function to evaluate corruption robustness.
+    """
     # setup device
     device = "cuda" if cfg.gpus > 0 else "cpu"
 
@@ -177,7 +268,17 @@ def main(cfg: omegaconf.DictConfig) -> None:
             corruptions=cfg.dataset.corruptions,
         )
     elif cfg.dataset.name == "imagenet-c":
-        pass
+        df = eval_imagenet(
+            model=model,
+            root=dataset_root,
+            transform=transform,
+            batch_size=cfg.batch_size,
+            savedir=cfg.savedir,
+            device=device,
+            corruptions=cfg.dataset.corruptions,
+        )
+    else:
+        raise NotImplementedError
 
     # save to csv
     df.to_csv("corruption_error_{name}.csv".format(name=cfg.dataset.name))
