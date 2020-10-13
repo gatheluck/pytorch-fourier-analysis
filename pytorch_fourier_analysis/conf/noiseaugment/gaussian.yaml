@@ -1,0 +1,5 @@
+noiseaugment:
+  name: gaussian
+  prob: 1.0
+  max_scale: 1.0
+  randomize_scele: True
