@@ -186,7 +186,7 @@ def eval_imagenet(
             result = dict(
                 corruption=corruption_type,
                 err1=sum(err1_list) / float(len(err1_list)),
-                err5=sum(mean_err5) / float(len(err5_list)),
+                err5=sum(err5_list) / float(len(err5_list)),
             )
             df = df.append(result, ignore_index=True)
             pbar.set_postfix(result)
