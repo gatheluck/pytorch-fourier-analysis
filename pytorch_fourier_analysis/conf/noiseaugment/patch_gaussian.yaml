@@ -4,4 +4,4 @@ noiseaugment:
   patch_size: 25
   randomize_patch_size: True
   max_scale: 1.0
-  randomize_scele: True
+  randomize_scale: True
