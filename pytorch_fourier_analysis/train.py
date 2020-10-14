@@ -54,9 +54,17 @@ def main(cfg: omegaconf.DictConfig) -> None:
     # setup model
     model = shared.get_model(name=cfg.arch, num_classes=cfg.dataset.num_classes)
 
+    # setup noise augmentation
+    noiseaugment = shared.get_noiseaugment(cfg.noiseaugment)
+    optional_transform = [noiseaugment] if noiseaugment else []
+
     # setup dataset
     train_transform = shared.get_transform(
-        cfg.dataset.input_size, cfg.dataset.mean, cfg.dataset.std, train=True
+        cfg.dataset.input_size,
+        cfg.dataset.mean,
+        cfg.dataset.std,
+        train=True,
+        optional_transform=optional_transform,
     )
     val_transform = shared.get_transform(
         cfg.dataset.input_size, cfg.dataset.mean, cfg.dataset.std, train=False
