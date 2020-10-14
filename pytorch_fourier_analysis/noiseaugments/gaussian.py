@@ -21,13 +21,13 @@ class Gaussian(NoiseAugmentationBase):
     def __call__(self, x: torch.Tensor):
         r = np.random.rand(1)
         if r < self.prob:
-            c, w, h = x.shape[-3:]
+            c, h, w = x.shape[-3:]
             scale = (
                 random.uniform(0, 1) * self.max_scale
                 if self.randomize_scale
                 else self.max_scale
             )
-            gaussian = torch.normal(mean=0.0, std=scale, size=(c, w, h))
+            gaussian = torch.normal(mean=0.0, std=scale, size=(c, h, w))
             return torch.clamp(x + gaussian, 0.0, 1.0)
         else:
             return x
@@ -59,14 +59,14 @@ class PatchGaussian(NoiseAugmentationBase):
     def __call__(self, x: torch.Tensor):
         r = np.random.rand(1)
         if r < self.prob:
-            c, w, h = x.shape[-3:]
+            c, h, w = x.shape[-3:]
             # generate noise
             scale = (
                 random.uniform(0, 1) * self.max_scale
                 if self.randomize_scale
                 else self.max_scale
             )
-            gaussian = torch.normal(mean=0.0, std=scale, size=(c, w, h))
+            gaussian = torch.normal(mean=0.0, std=scale, size=(c, h, w))
 
             # generate mask
             patch_size = (
