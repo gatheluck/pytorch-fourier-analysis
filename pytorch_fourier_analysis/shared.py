@@ -14,7 +14,9 @@ import torchvision
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from pytorch_fourier_analysis import models
 from pytorch_fourier_analysis import mixaugments
+from pytorch_fourier_analysis import noiseaugments
 from pytorch_fourier_analysis.mixaugments.base import MixAugmentationBase
+from pytorch_fourier_analysis.noiseaugments.base import NoiseAugmentationBase
 
 
 def get_model(name: str, num_classes: int, inplace: bool = True) -> torch.nn.Module:
@@ -94,6 +96,7 @@ def get_transform(
     mean: List[float],
     std: List[float],
     train: bool,
+    normalize: bool = True,
     optional_transform: List[Any] = [],
 ) -> torchvision.transforms.transforms.Compose:
     transform = list()
@@ -142,7 +145,8 @@ def get_transform(
         transform.extend(optional_transform)
 
     # normalize
-    transform.extend([torchvision.transforms.Normalize(mean=mean, std=std)])
+    if normalize:
+        transform.extend([torchvision.transforms.Normalize(mean=mean, std=std)])
 
     return torchvision.transforms.Compose(transform)
 
@@ -196,6 +200,22 @@ def get_mixaugment(cfg: omegaconf.DictConfig) -> Union[None, MixAugmentationBase
         raise NotImplementedError
 
     return mixaugment
+
+
+def get_noiseaugment(cfg: omegaconf.DictConfig) -> Union[None, NoiseAugmentationBase]:
+    _cfg = omegaconf.OmegaConf.to_container(cfg)
+    name = _cfg.pop("name")  # without pop raise KeyError.
+
+    if name is None:
+        noiseaugment = None
+    elif name == "gaussian":
+        noiseaugment = noiseaugments.Gaussian(**_cfg)
+    elif name == "patch_gaussian":
+        noiseaugment = noiseaugments.PatchGaussian(**_cfg)
+    else:
+        raise NotImplementedError
+
+    return noiseaugment
 
 
 def calc_error(
