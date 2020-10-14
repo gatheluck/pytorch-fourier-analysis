@@ -3,6 +3,7 @@ defaults:
   - misc/misc_train
   - dataset: cifar10
   - mixaugment: none
+  - noiseaugment: none
   - optimizer: sgd
   - scheduler: cosinlr
 
