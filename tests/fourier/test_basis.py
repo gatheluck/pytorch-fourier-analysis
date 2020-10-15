@@ -1,11 +1,13 @@
-import os
-import sys
-import torch
-import numpy as np
+import torchvision
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from pytorch_fourier_analysis import fourier
+import pytorch_fourier_analysis
 
 
-class TestBasis():
-    def test_
+class TestCreateFourierBasisGrid:
+    def test_generate_sample_result(self):
+        grid_size = 16
+        image_size = 32
+        list_basis = pytorch_fourier_analysis.fourier.basis.basis_grid(
+            grid_size, image_size
+        )
+        torchvision.utils.save_image(list_basis, "logs/grid.png", nrow=grid_size)
