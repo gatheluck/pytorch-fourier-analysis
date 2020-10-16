@@ -18,6 +18,8 @@ from pytorch_fourier_analysis import noiseaugments
 from pytorch_fourier_analysis.mixaugments.base import MixAugmentationBase
 from pytorch_fourier_analysis.noiseaugments.base import NoiseAugmentationBase
 
+import pytorch_fourier_analysis.noiseaugments
+
 
 def get_model(name: str, num_classes: int, inplace: bool = True) -> torch.nn.Module:
     # select model
@@ -212,6 +214,10 @@ def get_noiseaugment(cfg: omegaconf.DictConfig) -> Union[None, NoiseAugmentation
         noiseaugment = noiseaugments.Gaussian(**_cfg)
     elif name == "patch_gaussian":
         noiseaugment = noiseaugments.PatchGaussian(**_cfg)
+    elif name == "fourier":
+        noiseaugment = pytorch_fourier_analysis.noiseaugments.Fourier(**_cfg)
+    elif name == "patch_fourier":
+        noiseaugment = pytorch_fourier_analysis.noiseaugments.PatchFourier(**_cfg)
     else:
         raise NotImplementedError
 
