@@ -1,0 +1,7 @@
+noiseaugment:
+  name: patch_fourier
+  prob: 1.0
+  patch_size: 25
+  randomize_patch_size: True
+  max_index: 15
+  max_eps: 4.0

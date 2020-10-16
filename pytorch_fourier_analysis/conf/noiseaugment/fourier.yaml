@@ -1,0 +1,5 @@
+noiseaugment:
+  name: fourier
+  prob: 1.0
+  max_index: 15
+  max_eps: 4.0
