@@ -9,11 +9,13 @@ import torch
 import pytorch_lightning as pl
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from pytorch_fourier_analysis import shared, lit
+import pytorch_fourier_analysis.shared as shared
+import pytorch_fourier_analysis.lit
+# from pytorch_fourier_analysis import shared, lit
 from pytorch_fourier_analysis.lit import LitTrainerCallback, ClassificationModel
 
 
-@hydra.main(config_path="./conf/train.yaml")
+@hydra.main(config_path="conf/train.yaml")
 def main(cfg: omegaconf.DictConfig) -> None:
     """
     Entry point function for training models.
@@ -23,12 +25,12 @@ def main(cfg: omegaconf.DictConfig) -> None:
 
     # setup loggers
     api_key = os.environ.get("ONLINE_LOGGER_API_KEY")
-    loggers = lit.get_loggers(cfg, api_key)
+    loggers = pytorch_fourier_analysis.lit.get_loggers(cfg, api_key)
     for logger in loggers:
         logger.log_hyperparams(omegaconf.OmegaConf.to_container(cfg))
 
     # setup checkpoint callback and trainer
-    checkpoint_callback = lit.get_checkpoint_callback(
+    checkpoint_callback = pytorch_fourier_analysis.lit.get_checkpoint_callback(
         cfg.savedir, monitor=cfg.checkpoint_monitor, mode=cfg.checkpoint_mode
     )
 
@@ -71,7 +73,7 @@ def main(cfg: omegaconf.DictConfig) -> None:
     )
 
     dataset_root = os.path.join(
-        hydra.utils.get_original_cwd(), "../data"
+        hydra.utils.get_original_cwd(), "data"
     )  # this is needed because hydra automatically change working directory.
     train_dataset_class = shared.get_dataset_class(
         cfg.dataset.name, root=dataset_root, train=True
