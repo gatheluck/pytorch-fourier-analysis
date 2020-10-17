@@ -41,6 +41,9 @@ def cfg_to_tags(cfg: omegaconf.DictConfig) -> List[str]:
             tags.append(":".join([k, str(v)]))
         else:
             if "name" in v.keys():
+                v["name"] = (
+                    "null" if v["name"] is None else v["name"]
+                )  # convet None to str
                 tags.append(":".join([k, v["name"]]))
             else:
                 pass
