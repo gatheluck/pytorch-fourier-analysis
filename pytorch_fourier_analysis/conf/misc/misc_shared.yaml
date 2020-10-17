@@ -2,3 +2,4 @@ arch: wideresnet40
 num_workers: 8
 gpus: 1
 savedir: .
+project_name: null
