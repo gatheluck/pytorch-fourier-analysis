@@ -253,7 +253,7 @@ def main(cfg: omegaconf.DictConfig) -> None:
         cfg.dataset.input_size, cfg.dataset.mean, cfg.dataset.std, train=False
     )
     dataset_root = os.path.join(
-        hydra.utils.get_original_cwd(), "../../data"
+        hydra.utils.get_original_cwd(), "data"
     )  # this is needed because hydra automatically change working directory.
 
     if cfg.dataset.name in ["cifar10-c", "cifar100-c"]:
