@@ -124,6 +124,7 @@ def eval_cifar(
 
 
 def eval_imagenet(
+    name: str,
     model: torch.nn.Module,
     root: str,
     transform: torchvision.transforms.transforms.Compose,
@@ -136,6 +137,7 @@ def eval_imagenet(
     Evaluate corruption error by ImageNet-C dataset.
 
     Args
+        name: name of dataset
         model: Pretrained model
         root: Root path to dataset
         transform: Transform applied to cifar-c dataset
@@ -145,7 +147,7 @@ def eval_imagenet(
         corruptions: Considering corruptions
     """
     # setup clean imagenet dataset.
-    dataset_class = shared.get_dataset_class("imagenet", root=root, train=False)
+    dataset_class = shared.get_dataset_class(name.rstrip("-c"), root=root, train=False)
     dataset = dataset_class(transform=transform)
 
     df = pd.DataFrame(columns=["corruption", "err1", "err5"])
@@ -168,7 +170,7 @@ def eval_imagenet(
         for i, corruption_type in enumerate(corruptions):
             err1_list, err5_list = list(), list()
             for j in range(1, 6):  # imagenet-c dataset is separated to 5 small sets.
-                datasetpath = os.path.join(root, "imagenet-c", corruption_type, str(j))
+                datasetpath = os.path.join(root, name, corruption_type, str(j))
                 dataset = torchvision.datasets.ImageFolder(datasetpath, transform)
                 loader = torch.utils.data.DataLoader(
                     dataset,
@@ -256,7 +258,7 @@ def main(cfg: omegaconf.DictConfig) -> None:
         hydra.utils.get_original_cwd(), "data"
     )  # this is needed because hydra automatically change working directory.
 
-    if cfg.dataset.name in ["cifar10-c", "cifar100-c"]:
+    if cfg.dataset.name in {"cifar10-c", "cifar100-c"}:
         df = eval_cifar(
             name=cfg.dataset.name,
             model=model,
@@ -267,8 +269,9 @@ def main(cfg: omegaconf.DictConfig) -> None:
             device=device,
             corruptions=cfg.dataset.corruptions,
         )
-    elif cfg.dataset.name == "imagenet-c":
+    elif cfg.dataset.name in {"imagenet-c", "imagenet100-c"}:
         df = eval_imagenet(
+            name=cfg.dataset.name,
             model=model,
             root=dataset_root,
             transform=transform,
