@@ -90,4 +90,4 @@ if __name__ == "__main__":
     opt["imagenet100_rootpath"] = pathlib.Path(opt["imagenet100_rootpath"])
     opt["imagenet_c_rootpath"] = pathlib.Path(opt["imagenet_c_rootpath"])
     opt["imagenet100_c_rootpath"] = pathlib.Path(opt["imagenet100_c_rootpath"])
-    main(**vars(opt))
+    main(**opt)
