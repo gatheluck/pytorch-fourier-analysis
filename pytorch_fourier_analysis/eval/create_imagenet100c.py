@@ -5,7 +5,9 @@ from typing import Set
 
 
 def main(
-    imagenet100_rootpath: str, imagenet_c_rootpath: str, imagenet100_c_rootpath: str
+    imagenet100_rootpath: pathlib.Path,
+    imagenet_c_rootpath: pathlib.Path,
+    imagenet100_c_rootpath: pathlib.Path,
 ):
     imagenet100_wordnet_ids = _get_imagenet100_wordnet_ids(
         pathlib.Path(imagenet100_rootpath)
@@ -13,14 +15,19 @@ def main(
 
     imagenet_c_rootpath = pathlib.Path(imagenet_c_rootpath)
     imagenet100_c_rootpath = pathlib.Path(imagenet100_c_rootpath)
-    for corruption in tqdm.tqdm(_get_corruptions(imagenet_c_rootpath)):
-        for level in [str(i) for i in range(1, 6)]:
-            for wordnet_id in imagenet100_wordnet_ids:
-                source_dir = imagenet_c_rootpath / corruption / level / wordnet_id
-                target_dir = imagenet100_c_rootpath / corruption / level / wordnet_id
-                if not source_dir.exists():
-                    raise ValueError("path {} does not exist".format(source_dir))
-                _copy_images(source_dir, target_dir)
+    corruptions = _get_corruptions(imagenet_c_rootpath)
+    with tqdm.tqdm(total=len(corruptions), ncols=80) as pbar:
+        for corruption in corruptions:
+            for level in [str(i) for i in range(1, 6)]:
+                for wordnet_id in imagenet100_wordnet_ids:
+                    source_dir = imagenet_c_rootpath / corruption / level / wordnet_id
+                    target_dir = (
+                        imagenet100_c_rootpath / corruption / level / wordnet_id
+                    )
+                    if not source_dir.exists():
+                        raise ValueError("path {} does not exist".format(source_dir))
+                    _copy_images(source_dir, target_dir)
+            pbar.update()
 
 
 def _get_imagenet100_wordnet_ids(imagenet100_rootpath: pathlib.Path) -> Set[str]:
@@ -78,6 +85,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--imagenet100_c_rootpath", type=str, help="root path to ImageNet100-C"
     )
-    opt = parser.parse_args()
+    opt = vars(parser.parse_args())
 
+    opt["imagenet100_rootpath"] = pathlib.Path(opt["imagenet100_rootpath"])
+    opt["imagenet_c_rootpath"] = pathlib.Path(opt["imagenet_c_rootpath"])
+    opt["imagenet100_c_rootpath"] = pathlib.Path(opt["imagenet100_c_rootpath"])
     main(**vars(opt))
