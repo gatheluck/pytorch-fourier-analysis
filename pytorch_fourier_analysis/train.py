@@ -11,6 +11,7 @@ import pytorch_lightning as pl
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 import pytorch_fourier_analysis.shared as shared
 import pytorch_fourier_analysis.lit
+
 # from pytorch_fourier_analysis import shared, lit
 from pytorch_fourier_analysis.lit import LitTrainerCallback, ClassificationModel
 
@@ -106,10 +107,15 @@ def main(cfg: omegaconf.DictConfig) -> None:
     # setup mix augmentation
     mixaugment = shared.get_mixaugment(cfg.mixaugment)
 
-    # train
+    # setup adversarial attack
     criterion = torch.nn.CrossEntropyLoss()
+    attack_class = shared.get_attack_class(
+        cfg.attack, cfg.dataset.input_size, cfg.dataset.mean, cfg.dataset.std, criterion
+    )
+
+    # train
     litmodel = ClassificationModel(
-        model, criterion, mixaugment, optimizer_class, scheduler_class
+        model, criterion, mixaugment, attack_class, optimizer_class, scheduler_class
     )
     trainer.fit(litmodel, train_dataloader, val_dataloader)
 
