@@ -22,6 +22,7 @@ if __name__ == "__main__":
     rand_init = True
     scale_each = True
     scale_eps = False
+    avoid_target = True
     criterion = torch.nn.CrossEntropyLoss()
 
     transform = shared.get_transform(
@@ -53,11 +54,13 @@ if __name__ == "__main__":
             step_size,
             norm,
             rand_init,
+            scale_eps,
             scale_each,
+            avoid_target,
             criterion,
             device,
         )
-        x_adv = attack(model, x, target=t, avoid_target=True, scale_eps=scale_eps)
+        x_adv = attack(model, x, t)
         output_adv = model(x_adv)
         err1_adv = shared.calc_error(output_adv.detach(), t, topk=(1,))
 

@@ -19,7 +19,9 @@ class PgdAttack(AttackWrapper):
         step_size: float,
         norm: str,
         rand_init: bool,
+        scale_eps: bool,
         scale_each: bool,
+        avoid_target: bool,
         criterion: _Loss,
         device: Union[_device, str, None],
     ):
@@ -29,22 +31,19 @@ class PgdAttack(AttackWrapper):
         self.step_size = step_size
         self.norm = norm
         self.rand_init = rand_init
+        self.scale_eps = scale_eps
         self.scale_each = scale_each
+        self.avoid_target = avoid_target
         self.criterion = criterion
 
     def _forward(
-        self,
-        pixel_model: torch.nn.Module,
-        pixel_x: torch.Tensor,
-        target: torch.Tensor,
-        avoid_target: bool,
-        scale_eps: bool,
+        self, pixel_model: torch.nn.Module, pixel_x: torch.Tensor, target: torch.Tensor,
     ) -> torch.Tensor:
         """
         Return perturbed input in pixel space [0,255]
         """
         # if scale_eps is True, change eps adaptively. this usually improve robustness against wide range of attack
-        if scale_eps:
+        if self.scale_eps:
             if self.scale_each:
                 rand = torch.rand(pixel_x.size()[0], device=self.device)  # (B)
             else:
@@ -69,13 +68,7 @@ class PgdAttack(AttackWrapper):
         # compute delta in pixel space
         if self.num_iteration:  # run iteration
             pixel_delta = self._run(
-                pixel_model,
-                pixel_input,
-                pixel_delta,
-                target,
-                avoid_target,
-                base_eps,
-                step_size,
+                pixel_model, pixel_input, pixel_delta, target, base_eps, step_size,
             )
         else:  # if self.num_iteration is 0, return just initialization result
             pixel_delta.data = (
@@ -107,7 +100,6 @@ class PgdAttack(AttackWrapper):
         pixel_input: torch.Tensor,
         pixel_delta: torch.Tensor,
         target: torch.Tensor,
-        avoid_target: bool,
         eps: torch.Tensor,
         step_size: torch.Tensor,
     ) -> torch.Tensor:
@@ -122,7 +114,7 @@ class PgdAttack(AttackWrapper):
             loss = self.criterion(logit, target)
             loss.backward()
 
-            if avoid_target:
+            if self.avoid_target:
                 grad = pixel_delta.grad.data  # to avoid target, increase the loss
             else:
                 grad = -pixel_delta.grad.data  # to hit target, decrease the loss
