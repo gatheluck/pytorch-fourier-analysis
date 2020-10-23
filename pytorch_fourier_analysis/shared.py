@@ -1,15 +1,17 @@
 import os
 import sys
 import re
+import math
 import logging
 import functools
 from collections import OrderedDict
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import omegaconf
 import numpy as np
 import torch
 import torchvision
+from torch.nn.modules.loss import _Loss
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from pytorch_fourier_analysis import models
@@ -17,8 +19,10 @@ from pytorch_fourier_analysis import mixaugments
 from pytorch_fourier_analysis import noiseaugments
 from pytorch_fourier_analysis.mixaugments.base import MixAugmentationBase
 from pytorch_fourier_analysis.noiseaugments.base import NoiseAugmentationBase
+from pytorch_fourier_analysis.attacks import AttackWrapper
 
 import pytorch_fourier_analysis.noiseaugments
+import pytorch_fourier_analysis.attacks
 
 
 def get_model(name: str, num_classes: int, inplace: bool = True) -> torch.nn.Module:
@@ -222,6 +226,32 @@ def get_noiseaugment(cfg: omegaconf.DictConfig) -> Union[None, NoiseAugmentation
         raise NotImplementedError
 
     return noiseaugment
+
+
+def get_attack_class(
+    cfg: omegaconf.DictConfig,
+    input_size: int,
+    mean: Tuple[float],
+    std: Tuple[float],
+    criterion: _Loss,
+) -> Optional[AttackWrapper]:
+    _cfg = omegaconf.OmegaConf.to_container(cfg)
+    name = _cfg.pop("name")  # without pop raise KeyError.
+
+    if name is None:
+        return None
+    elif name == "pgd":
+        _cfg["step_size"] = _cfg["eps_max"] / math.sqrt(_cfg["num_iteration"])
+        return functools.partial(
+            pytorch_fourier_analysis.attacks.PgdAttack,
+            input_size=input_size,
+            mean=mean,
+            std=std,
+            criterion=criterion,
+            **_cfg
+        )
+    else:
+        raise NotImplementedError
 
 
 def calc_error(
