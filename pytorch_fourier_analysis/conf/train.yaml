@@ -4,6 +4,7 @@ defaults:
   - dataset: cifar10
   - mixaugment: none
   - noiseaugment: none
+  - attack: none
   - optimizer: sgd
   - scheduler: cosinlr
 

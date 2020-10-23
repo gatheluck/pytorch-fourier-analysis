@@ -1,0 +1,9 @@
+attack:
+  name: pgd
+  num_iteration: 10
+  eps_max: 8.0
+  norm: linf
+  rand_init: True
+  scale_each: True
+  scale_eps: True
+  avoid_target: True
