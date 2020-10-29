@@ -1,0 +1,9 @@
+defaults:
+  - misc/misc_shared
+  - misc/misc_first_layer
+  - dataset: imagenet100-c
+
+
+hydra:
+  run:
+    dir: ./logs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
