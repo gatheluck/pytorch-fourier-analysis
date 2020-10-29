@@ -75,6 +75,39 @@ class TestFFTShift:
             torch.from_numpy(np.fft.fftshift(x.numpy(), axes=(1, 2, 3)))
         )
 
+    def test_complex_tensor(self):
+        # single batch
+        x = (
+            torch.tensor([0, 1, 2, 3], dtype=torch.cfloat)
+            .view(1, 2, 2)
+        )
+        x_ans = (
+            torch.tensor([3, 2, 1, 0], dtype=torch.cfloat)
+            .view(1, 2, 2)
+        )
+        assert fourier.fft_shift(x).equal(x_ans)
+
+        x = (
+            torch.tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], dtype=torch.cfloat)
+            .view(1, 4, 4)
+        )
+        x_ans = (
+            torch.tensor([10, 11, 8, 9, 14, 15, 12, 13, 2, 3, 0, 1, 6, 7, 4, 5], dtype=torch.cfloat)
+            .view(1, 4, 4)
+        )
+        assert fourier.fft_shift(x).equal(x_ans)
+
+        # batched
+        x = (
+            torch.tensor([0, 1, 2, 3, 4, 5, 6, 7], dtype=torch.cfloat)
+            .view(2, 2, 2)
+        )
+        x_ans = (
+            torch.tensor([3, 2, 1, 0, 7, 6, 5, 4], dtype=torch.cfloat)
+            .view(2, 2, 2)
+        )
+        assert fourier.fft_shift(x).equal(x_ans)
+
 
 class TestIFFTShift:
     def test_compre_to_numpy(self):
@@ -151,3 +184,17 @@ class TestIFFTShift:
         assert fourier.ifft_shift(x).equal(
             torch.from_numpy(np.fft.ifftshift(x.numpy(), axes=(1, 2, 3)))
         )
+
+
+if __name__ == "__main__":
+    # single batch
+    x = (
+        torch.tensor([0, 1, 2, 3], dtype=torch.cfloat)
+        .view(1, 2, 2)
+    )
+
+    x_ans = (
+        torch.tensor([3, 2, 1, 0], dtype=torch.cfloat)
+        .view(1, 2, 2)
+    )
+    assert fourier.fft_shift(x).equal(x_ans)
