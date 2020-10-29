@@ -14,5 +14,5 @@ if __name__ == "__main__":
         [torchvision.transforms.CenterCrop(224), torchvision.transforms.ToTensor()]
     )
     x = transform(x).unsqueeze(0)  # (B,C,H,W)
-    x = fourier.bandpass_filter(x, bandwidth=224, filter_mode="low_pass", eps=100.0)
+    x = fourier.bandpass_filter(x, bandwidth=224, filter_mode="low_pass")
     torchvision.utils.save_image(x, "logs/bandpass.png")
