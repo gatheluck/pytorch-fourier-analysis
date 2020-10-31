@@ -19,6 +19,7 @@ if __name__ == "__main__":
     # https://note.com/hiro10_yme38/n/nd2fa525942f3#x1qgT
     sns.set()
     sns.set_style("whitegrid")
+    # sns.set_style("whitegrid", {'font.family': 'serif', 'font.serif': 'Times New Roman'})
 
     fig, ax = plt.subplots(1, 2, figsize=(15, 5))
 
