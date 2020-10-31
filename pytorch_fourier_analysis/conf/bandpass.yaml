@@ -1,0 +1,9 @@
+defaults:
+  - misc/misc_shared
+  - misc/misc_bandpass
+  - dataset: cifar10
+
+
+hydra:
+  run:
+    dir: ./logs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}

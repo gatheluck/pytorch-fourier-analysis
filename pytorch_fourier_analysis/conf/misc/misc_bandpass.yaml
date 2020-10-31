@@ -1,0 +1,6 @@
+batch_size: 512
+num_nodes: 1
+weight: null
+low_bandwidths: [0, 3, 7, 11, 15, 19, 23, 27, 31, 32]
+high_bandwidths: [0, 3, 7, 11, 15, 19, 23, 27, 31, 32]
+eps: 8.0
