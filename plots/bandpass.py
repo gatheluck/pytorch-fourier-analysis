@@ -21,7 +21,7 @@ if __name__ == "__main__":
     sns.set_style("whitegrid")
     # sns.set_style("whitegrid", {'font.family': 'serif', 'font.serif': 'Times New Roman'})
 
-    fig, ax = plt.subplots(1, 2, figsize=(15, 5))
+    fig, ax = plt.subplots(1, 2, figsize=(9, 3.5))
 
     l0 = sns.lineplot(x="bandwidth", y="err1", hue="method", style="method", dashes=False, markers=True, data=df_low, ax=ax[0])
     ax[0].set(xlabel="Bandwidth", ylabel="Error", xlim=(0, 33), ylim=(0, 100))
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     savepath = pathlib.Path("plots/outputs/bandpass_error_cifar10.png")
     plt.tight_layout()
-    plt.subplots_adjust(bottom=0.2)
+    plt.subplots_adjust(bottom=0.275)
     plt.savefig(savepath)
 
     # for name, df in {"lowpass": df_low, "highpass": df_high}.items():
