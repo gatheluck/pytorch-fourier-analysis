@@ -29,6 +29,8 @@ def get_model(name: str, num_classes: int, inplace: bool = True) -> torch.nn.Mod
     # select model
     if name == "resnet50":
         model = torchvision.models.resnet50(pretrained=False, num_classes=num_classes)
+    elif name == "resnet56":
+        model = models.resnet56(pretrained=False, num_classes=num_classes)
     elif name == "wideresnet40":
         model = models.wideresnet40(num_classes=num_classes, widening_factor=2)
     else:
@@ -277,7 +279,7 @@ def calc_error(
 
         errors = list()
         for k in topk:
-            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+            correct_k = correct[:k].reshape((-1,)).float().sum(0, keepdim=True)
             wrong_k = batch_size - correct_k
             errors.append(wrong_k.mul_(100.0 / batch_size))
 
