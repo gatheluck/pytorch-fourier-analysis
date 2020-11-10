@@ -1,2 +1,2 @@
-from .attack import AttackWrapper
+from .attack import AttackWrapper, Normalizer, Denormalizer
 from .pgd import PgdAttack
