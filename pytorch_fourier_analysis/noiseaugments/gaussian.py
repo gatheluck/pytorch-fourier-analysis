@@ -1,9 +1,39 @@
 import random
+from typing import Optional, Tuple, Union
+from typing_extensions import Literal
 
 import numpy as np
 import torch
 
+
 from .base import NoiseAugmentationBase
+
+FilterMode = Literal[None, "low_pass", "high_pass"]
+def get_gaussian_noise(mean: Union[float, torch.Tensor],
+                       std: Union[float, torch.Tensor],
+                       size: Tuple[int],
+                       mode: FilterMode, 
+                       bandwidth: Optional[int], 
+                       adjust_eps: bool) -> torch.Tensor:
+    """
+    return gaussian noise with bandpass filter.
+    """
+    gaussian = torch.normal(mean=mean, std=std, size=size)  # (c,h,w)
+    if not (mode and bandwidth):
+        return gaussian
+    
+    # apply bandpass filter
+    filtered_gaussian, _ = fourier.bandpass_filter(gaussian.unsqueeze(0), bandwidth, mode, None)
+    filtered_gaussian = filtered_gaussian.squeeze(0)
+    if not adjust_eps:
+        return filtered_gaussian
+    
+    else:
+        # adjust eps
+        eps = gaussian.view(gaussian.size(0), -1).norm(dim=-1)  # (c)
+        eps_filtered = filtered_gaussian.view(gaussian.size(0), -1).norm(dim=-1)  # (c)
+        filtered_gaussian /=  eps_filtered[:, None, None]
+        return filtered_gaussian * eps[:, None, None]
 
 
 class Gaussian(NoiseAugmentationBase):
@@ -31,6 +61,9 @@ class Gaussian(NoiseAugmentationBase):
             return torch.clamp(x + gaussian, 0.0, 1.0)
         else:
             return x
+
+# class Bandpass
+
 
 
 class PatchGaussian(NoiseAugmentationBase):
