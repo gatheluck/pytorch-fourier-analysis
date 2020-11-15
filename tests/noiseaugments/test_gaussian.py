@@ -1,11 +1,54 @@
 import os
+import random
 import sys
+
+import pytest
 import torch
 import torchvision
+import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 from pytorch_fourier_analysis import noiseaugments
 from pytorch_fourier_analysis import shared
+
+
+torch.manual_seed(123)
+torch.cuda.manual_seed(123)
+np.random.seed(123)
+random.seed(123)
+torch.backends.cudnn.enabled=False
+torch.backends.cudnn.deterministic=True
+
+
+class TestGetGaussianNose:
+    params = {
+        "a": (None, None, False),
+        "b": (None, None, True),
+        "c": (None, 8, False),
+        "d": (None, 8, True),
+        "e": ("low_pass", None, False),
+        "f": ("low_pass", None, True),
+        "g": ("high_pass", None, False),
+        "h": ("high_pass", None, True),
+    }
+
+    @pytest.mark.parametrize(
+        "mode, bandwidth, adjust_eps",
+        list(params.values()),
+        ids=list(params.keys()),
+    )
+    def test_no_bandpass_filter(self, mode, bandwidth, adjust_eps):
+        mean = 0.0
+        std = random.uniform(0, 1)
+        size = (3, 32, 32)
+
+        torch.manual_seed(123)
+        expect = torch.normal(mean=mean, std=std, size=size)  # (c,h,w)
+
+        torch.manual_seed(123)
+        assert noiseaugments.get_gaussian_noise(mean, std, size, mode, bandwidth, adjust_eps).equal(expect) 
+
+
 
 
 if __name__ == "__main__":
