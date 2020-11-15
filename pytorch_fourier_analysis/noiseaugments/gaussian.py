@@ -81,11 +81,13 @@ class BandpassGaussian(NoiseAugmentationBase):
         max_scale: float,
         randomize_scale: bool,
         filter_mode: FilterMode,
+        max_bandwidth: Optional[int] = None,
     ):
         self.prob = prob
         self.max_scale = max_scale
         self.randomize_scale = randomize_scale
         self.filter_mode = filter_mode
+        self.max_bandwidth = max_bandwidth
 
     def __call__(self, x: torch.Tensor):
         r = np.random.rand(1)
@@ -97,14 +99,20 @@ class BandpassGaussian(NoiseAugmentationBase):
                 else self.max_scale
             )
 
-            bandwidth = random.randrange(1, min(h, w), 2)
+            # check maxbandwidth
+            if self.max_bandwidth and (self.max_bandwidth <= min(h, w)):
+                max_bandwidth_ = self.max_bandwidth
+            else:
+                max_bandwidth_ = min(h, w)
+
+            bandwidth_ = random.randrange(1, max_bandwidth_, 2)
 
             filtered_gaussian = get_gaussian_noise(
                 mean=0.0,
                 std=scale,
                 size=(c, h, w),
                 mode=self.filter_mode,
-                bandwidth=bandwidth,
+                bandwidth=bandwidth_,
                 adjust_eps=True,
             )
             return torch.clamp(x + filtered_gaussian, 0.0, 1.0)
