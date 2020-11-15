@@ -166,3 +166,71 @@ class PatchGaussian(NoiseAugmentationBase):
             return self.add_masked_noise(x, gaussian, mask)
         else:
             return x
+
+
+class BandpassPatchGaussian(NoiseAugmentationBase):
+    def __init__(
+        self,
+        prob: float,
+        patch_size: int,
+        randomize_patch_size: bool,
+        max_scale: float,
+        randomize_scale: bool,
+        filter_mode: FilterMode,
+        max_bandwidth: Optional[int] = None,
+    ):
+        """
+        Args
+            prob: Probability of using Patch Gaussian
+            patch_size: Size of patch. In the original paper, 25 for CIFAR-10 and 224 for ImageNet
+            randomize_patch_size: Randomizing patch size or not
+            max_scale: Max scale of Gaussian noise
+            randomize_scale: Randomizing scale or not
+        """
+        self.prob = prob
+        self.patch_size = patch_size
+        self.randomize_patch_size = randomize_patch_size
+        self.max_scale = max_scale
+        self.randomize_scale = randomize_scale
+        self.filter_mode = filter_mode
+        self.max_bandwidth = max_bandwidth
+
+    def __call__(self, x: torch.Tensor):
+        r = np.random.rand(1)
+        if r < self.prob:
+            c, h, w = x.shape[-3:]
+            # generate noise
+            scale = (
+                random.uniform(0, 1) * self.max_scale
+                if self.randomize_scale
+                else self.max_scale
+            )
+
+            # check maxbandwidth
+            if self.max_bandwidth and (self.max_bandwidth <= min(h, w)):
+                max_bandwidth_ = self.max_bandwidth
+            else:
+                max_bandwidth_ = min(h, w)
+
+            bandwidth_ = random.randrange(1, max_bandwidth_, 2)
+
+            filtered_gaussian = get_gaussian_noise(
+                mean=0.0,
+                std=scale,
+                size=(c, h, w),
+                mode=self.filter_mode,
+                bandwidth=bandwidth_,
+                adjust_eps=True,
+            )
+
+            # generate mask
+            patch_size = (
+                random.randrange(1, self.patch_size + 1)
+                if self.randomize_patch_size
+                else self.patch_size
+            )
+            mask = self.sample_mask(x.size(), patch_size)
+
+            return self.add_masked_noise(x, filtered_gaussian, mask)
+        else:
+            return x
