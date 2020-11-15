@@ -1,3 +1,5 @@
+import os
+import sys
 import random
 from typing import Optional, Tuple, Union
 from typing_extensions import Literal
@@ -5,34 +7,43 @@ from typing_extensions import Literal
 import numpy as np
 import torch
 
-
 from .base import NoiseAugmentationBase
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+from pytorch_fourier_analysis import fourier
+
+
 FilterMode = Literal[None, "low_pass", "high_pass"]
-def get_gaussian_noise(mean: Union[float, torch.Tensor],
-                       std: Union[float, torch.Tensor],
-                       size: Tuple[int],
-                       mode: FilterMode, 
-                       bandwidth: Optional[int], 
-                       adjust_eps: bool) -> torch.Tensor:
+
+
+def get_gaussian_noise(
+    mean: Union[float, torch.Tensor],
+    std: Union[float, torch.Tensor],
+    size: Tuple[int],
+    mode: FilterMode,
+    bandwidth: Optional[int],
+    adjust_eps: Optional[bool],
+) -> torch.Tensor:
     """
     return gaussian noise with bandpass filter.
     """
     gaussian = torch.normal(mean=mean, std=std, size=size)  # (c,h,w)
     if not (mode and bandwidth):
         return gaussian
-    
+
     # apply bandpass filter
-    filtered_gaussian, _ = fourier.bandpass_filter(gaussian.unsqueeze(0), bandwidth, mode, None)
+    filtered_gaussian, _ = fourier.bandpass_filter(
+        gaussian.unsqueeze(0), bandwidth, mode, None
+    )
     filtered_gaussian = filtered_gaussian.squeeze(0)
     if not adjust_eps:
         return filtered_gaussian
-    
+
     else:
         # adjust eps
         eps = gaussian.view(gaussian.size(0), -1).norm(dim=-1)  # (c)
         eps_filtered = filtered_gaussian.view(gaussian.size(0), -1).norm(dim=-1)  # (c)
-        filtered_gaussian /=  eps_filtered[:, None, None]
+        filtered_gaussian /= eps_filtered[:, None, None]
         return filtered_gaussian * eps[:, None, None]
 
 
@@ -62,8 +73,8 @@ class Gaussian(NoiseAugmentationBase):
         else:
             return x
 
-# class Bandpass
 
+# class Bandpass
 
 
 class PatchGaussian(NoiseAugmentationBase):
