@@ -1,0 +1,9 @@
+noiseaugment:
+  name: bandpass_patch_gaussian
+  prob: 1.0
+  patch_size: 25
+  randomize_patch_size: True
+  max_scale: 1.0
+  randomize_scale: True
+  filter_mode: low_pass
+  max_bandwidth: null

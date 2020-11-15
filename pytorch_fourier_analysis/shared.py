@@ -218,8 +218,12 @@ def get_noiseaugment(cfg: omegaconf.DictConfig) -> Union[None, NoiseAugmentation
         noiseaugment = None
     elif name == "gaussian":
         noiseaugment = noiseaugments.Gaussian(**_cfg)
+    elif name == "bandpass_gaussian":
+        noiseaugment = noiseaugments.BandpassGaussian(**_cfg)
     elif name == "patch_gaussian":
         noiseaugment = noiseaugments.PatchGaussian(**_cfg)
+    elif name == "bandpass_patch_gaussian":
+        noiseaugment = noiseaugments.BandpassPatchGaussian(**_cfg)
     elif name == "fourier":
         noiseaugment = pytorch_fourier_analysis.noiseaugments.Fourier(**_cfg)
     elif name == "patch_fourier":

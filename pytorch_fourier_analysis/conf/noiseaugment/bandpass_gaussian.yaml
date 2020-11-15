@@ -1,0 +1,7 @@
+noiseaugment:
+  name: bandpass_gaussian
+  prob: 1.0
+  max_scale: 1.0
+  randomize_scale: True
+  filter_mode: low_pass
+  max_bandwidth: null
