@@ -16,8 +16,8 @@ torch.manual_seed(123)
 torch.cuda.manual_seed(123)
 np.random.seed(123)
 random.seed(123)
-torch.backends.cudnn.enabled=False
-torch.backends.cudnn.deterministic=True
+torch.backends.cudnn.enabled = False
+torch.backends.cudnn.deterministic = True
 
 
 class TestGetGaussianNose:
@@ -46,9 +46,103 @@ class TestGetGaussianNose:
         expect = torch.normal(mean=mean, std=std, size=size)  # (c,h,w)
 
         torch.manual_seed(123)
-        assert noiseaugments.get_gaussian_noise(mean, std, size, mode, bandwidth, adjust_eps).equal(expect) 
+        assert noiseaugments.get_gaussian_noise(
+            mean, std, size, mode, bandwidth, adjust_eps
+        ).equal(expect)
 
+    def test_bandpass_filter(self):
+        mean = 0.0
+        std = random.uniform(0, 1)
+        size = (3, 32, 32)
 
+        low_passed = list()
+        torch.manual_seed(123)
+        low_passed.append(
+            noiseaugments.get_gaussian_noise(
+                mean, std, size, mode=None, bandwidth=None, adjust_eps=None
+            )
+        )
+        for bandwidth in range(1, 32, 2):
+            torch.manual_seed(123)
+            low_passed.append(
+                noiseaugments.get_gaussian_noise(
+                    mean,
+                    std,
+                    size,
+                    mode="low_pass",
+                    bandwidth=bandwidth,
+                    adjust_eps=False,
+                )
+            )
+            torchvision.utils.save_image(low_passed, "logs/lowpass_wo_adjust.png")
+
+        high_passed = list()
+        torch.manual_seed(123)
+        high_passed.append(
+            noiseaugments.get_gaussian_noise(
+                mean, std, size, mode=None, bandwidth=None, adjust_eps=None
+            )
+        )
+        for bandwidth in range(1, 32, 2):
+            torch.manual_seed(123)
+            high_passed.append(
+                noiseaugments.get_gaussian_noise(
+                    mean,
+                    std,
+                    size,
+                    mode="high_pass",
+                    bandwidth=bandwidth,
+                    adjust_eps=False,
+                )
+            )
+            torchvision.utils.save_image(high_passed, "logs/highpass_wo_adjust.png")
+
+    def test_bandpass_filter_with_adjustment(self):
+        mean = 0.0
+        std = random.uniform(0, 1)
+        size = (3, 32, 32)
+
+        low_passed = list()
+        torch.manual_seed(123)
+        low_passed.append(
+            noiseaugments.get_gaussian_noise(
+                mean, std, size, mode=None, bandwidth=None, adjust_eps=None
+            )
+        )
+        for bandwidth in range(1, 32, 2):
+            torch.manual_seed(123)
+            low_passed.append(
+                noiseaugments.get_gaussian_noise(
+                    mean,
+                    std,
+                    size,
+                    mode="low_pass",
+                    bandwidth=bandwidth,
+                    adjust_eps=True,
+                )
+            )
+            torchvision.utils.save_image(low_passed, "logs/lowpass_w_adjust.png")
+
+        high_passed = list()
+        torch.manual_seed(123)
+        high_passed.append(
+            noiseaugments.get_gaussian_noise(
+                mean, std, size, mode=None, bandwidth=None, adjust_eps=None
+            )
+        )
+        for bandwidth in range(1, 32, 2):
+            torch.manual_seed(123)
+            high_passed.append(
+                noiseaugments.get_gaussian_noise(
+                    mean,
+                    std,
+                    size,
+                    mode="high_pass",
+                    bandwidth=bandwidth,
+                    adjust_eps=True,
+                )
+            )
+            torchvision.utils.save_image(high_passed, "logs/highpass_w_adjust.png")
 
 
 if __name__ == "__main__":
