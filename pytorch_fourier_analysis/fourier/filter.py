@@ -43,7 +43,10 @@ def bandpass_filter(
         mask[center_h, center_w] = True
     elif bandwidth > 1:
         halfband = bandwidth // 2
-        mask[center_h - halfband: center_h + halfband, center_w - halfband: center_w + halfband] = True
+        mask[
+            center_h - halfband : center_h + halfband,
+            center_w - halfband : center_w + halfband,
+        ] = True
 
     # if bandwidth > 0:
     #     halfband_l = np.ceil((x.size(-1) - bandwidth) / 2)
@@ -55,19 +58,19 @@ def bandpass_filter(
     #         mask[-halfband_s:, :] = False
     #         mask[:, -halfband_s:] = False
 
-        # mask[0:(halfband + 1), :] = False
-        # mask[:, 0: (halfband + 1)] = False
-        # if halfband > 0:
-        #     mask[-halfband:, :] = False
-        #     mask[:, -halfband:] = False
+    # mask[0:(halfband + 1), :] = False
+    # mask[:, 0: (halfband + 1)] = False
+    # if halfband > 0:
+    #     mask[-halfband:, :] = False
+    #     mask[:, -halfband:] = False
 
-        # halfband = (x.size(-1) - bandwidth) // 2
+    # halfband = (x.size(-1) - bandwidth) // 2
 
-        # mask[0:(halfband + 1), :] = False
-        # mask[:, 0: (halfband + 1)] = False
-        # if halfband > 0:
-        #     mask[-halfband:, :] = False
-        #     mask[:, -halfband:] = False
+    # mask[0:(halfband + 1), :] = False
+    # mask[:, 0: (halfband + 1)] = False
+    # if halfband > 0:
+    #     mask[-halfband:, :] = False
+    #     mask[:, -halfband:] = False
 
     w = w.where(mask, torch.zeros_like(w))
 
@@ -85,19 +88,26 @@ def bandpass_filter(
 
     # normalize
     if eps is None:
-        return x_filtered
+        return x_filtered, w.real
     else:
         # norms = x_filtered.view(x_filtered.size(0), -1).norm(dim=-1)  # (B)
         # return eps * (x_filtered / norms[:, None, None, None]), w.real
 
-        norms_r = x_filtered[:, 0, :, :].view(x_filtered.size(0), -1).norm(dim=-1)  # (B)
-        norms_g = x_filtered[:, 1, :, :].view(x_filtered.size(0), -1).norm(dim=-1)  # (B)
-        norms_b = x_filtered[:, 2, :, :].view(x_filtered.size(0), -1).norm(dim=-1)  # (B)
+        norms_r = (
+            x_filtered[:, 0, :, :].view(x_filtered.size(0), -1).norm(dim=-1)
+        )  # (B)
+        norms_g = (
+            x_filtered[:, 1, :, :].view(x_filtered.size(0), -1).norm(dim=-1)
+        )  # (B)
+        norms_b = (
+            x_filtered[:, 2, :, :].view(x_filtered.size(0), -1).norm(dim=-1)
+        )  # (B)
 
         x_filtered[:, 0, :, :] /= norms_r[:, None, None]
         x_filtered[:, 1, :, :] /= norms_g[:, None, None]
         x_filtered[:, 2, :, :] /= norms_b[:, None, None]
         return eps * x_filtered, w.real
+
 
 # def bandpass_filter(
 #     x: torch.Tensor, bandwidth: int, filter_mode: str, eps: Optional[float] = None
