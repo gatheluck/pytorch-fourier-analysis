@@ -74,7 +74,42 @@ class Gaussian(NoiseAugmentationBase):
             return x
 
 
-# class Bandpass
+class BandpassGaussian(NoiseAugmentationBase):
+    def __init__(
+        self,
+        prob: float,
+        max_scale: float,
+        randomize_scale: bool,
+        filter_mode: FilterMode,
+    ):
+        self.prob = prob
+        self.max_scale = max_scale
+        self.randomize_scale = randomize_scale
+        self.filter_mode = filter_mode
+
+    def __call__(self, x: torch.Tensor):
+        r = np.random.rand(1)
+        if r < self.prob:
+            c, h, w = x.shape[-3:]
+            scale = (
+                random.uniform(0, 1) * self.max_scale
+                if self.randomize_scale
+                else self.max_scale
+            )
+
+            bandwidth = random.randrange(1, min(h, w), 2)
+
+            filtered_gaussian = get_gaussian_noise(
+                mean=0.0,
+                std=scale,
+                size=(c, h, w),
+                mode=self.filter_mode,
+                bandwidth=bandwidth,
+                adjust_eps=True,
+            )
+            return torch.clamp(x + filtered_gaussian, 0.0, 1.0)
+        else:
+            return x
 
 
 class PatchGaussian(NoiseAugmentationBase):
