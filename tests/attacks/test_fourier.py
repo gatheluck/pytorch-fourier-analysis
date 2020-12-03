@@ -4,7 +4,7 @@ import sys
 import torch
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from pytorch_fourier_analysis.attacks import logits_to_index
+from pytorch_fourier_analysis.attacks import logits_to_index, index_to_basis
 
 
 class TestLogitsToIndex:
@@ -12,14 +12,18 @@ class TestLogitsToIndex:
         batch_size = 8
         s = 4
         noise = 0.01
-        index_h = torch.randint(0, s, (batch_size,))
-        index_w = torch.randint(0, s, (batch_size,))
-        index_h_onehot = torch.nn.functional.one_hot(
-            index_h, num_classes=s
-        ).float()  # (B,H)
-        index_w_onehot = torch.nn.functional.one_hot(
-            index_w, num_classes=s
-        ).float()  # (B,W)
+        index_h = torch.randint(0, s, (3 * batch_size,))
+        index_w = torch.randint(0, s, (3 * batch_size,))
+        index_h_onehot = (
+            torch.nn.functional.one_hot(index_h, num_classes=s)
+            .float()
+            .view(batch_size, 3, s)
+        )  # (B,3,H)
+        index_w_onehot = (
+            torch.nn.functional.one_hot(index_w, num_classes=s)
+            .float()
+            .view(batch_size, 3, s)
+        )  # (B,3,W)
 
         index_ans = torch.matmul(
             index_h_onehot.unsqueeze(-1), index_w_onehot.unsqueeze(-2)
@@ -32,14 +36,20 @@ class TestLogitsToIndex:
         batch_size = 8
         s = 4
         noise = 0.01
-        index_h = torch.randint(0, s, (batch_size,))
-        index_w = torch.randint(0, s, (batch_size,))
+        index_h = torch.randint(0, s, (3 * batch_size,))
+        index_w = torch.randint(0, s, (3 * batch_size,))
         logits_h = (
-            torch.nn.functional.one_hot(index_h, num_classes=s).float() + noise
-        )  # (B,H)
+            torch.nn.functional.one_hot(index_h, num_classes=s)
+            .float()
+            .view(batch_size, 3, s)
+            + noise
+        )  # (B,3,H)
         logits_w = (
-            torch.nn.functional.one_hot(index_w, num_classes=s).float() + noise
-        )  # (B,W)
+            torch.nn.functional.one_hot(index_w, num_classes=s)
+            .float()
+            .view(batch_size, 3, s)
+            + noise
+        )  # (B,3,W)
         logits_h.requires_grad_()
         logits_w.requires_grad_()
 
@@ -50,3 +60,16 @@ class TestLogitsToIndex:
 
         assert logits_h.grad is not None
         assert logits_w.grad is not None
+
+
+class TestIndexToBasis:
+    def test_grad(self):
+        index = torch.randn(8, 3, 32, 32)
+        index.requires_grad_()
+
+        basis = index_to_basis(index)
+
+        pseudo_loss = basis.sum()
+        pseudo_loss.backward()
+
+        assert index.grad is not None
