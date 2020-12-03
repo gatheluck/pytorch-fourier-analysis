@@ -3,23 +3,33 @@ import torch
 from .attack import AttackWrapper
 
 
-def logits_to_index(logits_h: torch.FloatTensor,
-                    logits_w: torch.FloatTensor,
-                    tau: float = 1.0,
-                    scale_logits: float = 5.0) -> torch.FloatTensor:
+def logits_to_index(
+    logits_h: torch.FloatTensor,
+    logits_w: torch.FloatTensor,
+    tau: float = 1.0,
+    scale_logits: float = 5.0,
+) -> torch.FloatTensor:
     """
-    convert logits to index by gumbel softmax.
-    the shape of logits should be (B,S). here S = math.ceil(H/2) = math.ceil(W/2).
-    the shape of return is (B,2).
+    convert logits to index using gumbel softmax.
+    the shape of returned index is (B,H,W).
 
     Args
-        logits: logits of fourier basis. its shape should be (B,2,S).
+        logits_h: logits of fourier basis about hight. its shape should be (B,H).
+        logits_h: logits of fourier basis about width. its shape should be (B,W) or (B,math.ceil(W/2)).
+        tau: tempalature of Gumbel softmax.
+        scale_logits: scale factor of logits. NOTE: if this value is too small, Gumbel softmax does not work instead of thevalue of tau.
     """
     # apply gumbel softmax with "straight-through" trick.
-    index_h_onehot = torch.nn.functional.gumbel_softmax(logits_h * scale_logits, tau=tau, hard=True)
-    index_w_onehot = torch.nn.functional.gumbel_softmax(logits_w * scale_logits, tau=tau, hard=True)
+    index_h_onehot = torch.nn.functional.gumbel_softmax(
+        logits_h * scale_logits, tau=tau, hard=True
+    )
+    index_w_onehot = torch.nn.functional.gumbel_softmax(
+        logits_w * scale_logits, tau=tau, hard=True
+    )
 
-    return torch.matmul(index_h_onehot.unsqueeze(-1), index_w_onehot.unsqueeze(-2))  # (B,H,W)
+    return torch.matmul(
+        index_h_onehot.unsqueeze(-1), index_w_onehot.unsqueeze(-2)
+    )  # (B,H,W)
 
 
 class FourierAttack(AttackWrapper):
@@ -27,7 +37,10 @@ class FourierAttack(AttackWrapper):
         self.num_iteration = num_iteration
 
     def _forward(
-        self, pixel_model: torch.nn.Module, pixel_x: torch.Tensor, target: torch.Tensor,
+        self,
+        pixel_model: torch.nn.Module,
+        pixel_x: torch.Tensor,
+        target: torch.Tensor,
     ) -> torch.Tensor:
         """
         Return perturbed input in pixel space [0,255]
@@ -39,6 +52,5 @@ class FourierAttack(AttackWrapper):
         if self.num_iteration:
             pass
 
-    def _run(self,
-             pixel_model: torch.nn.Module):
+    def _run(self, pixel_model: torch.nn.Module):
         pass
