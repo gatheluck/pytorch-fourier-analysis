@@ -1,4 +1,5 @@
 import torch
+import torch.fft
 
 from .attack import AttackWrapper
 
@@ -15,7 +16,7 @@ def logits_to_index(
 
     Args
         logits_h: logits of fourier basis about hight. its shape should be (B,H).
-        logits_h: logits of fourier basis about width. its shape should be (B,W) or (B,math.ceil(W/2)).
+        logits_h: logits of fourier basis about width. its shape should be (B,W) or W//2+1).
         tau: tempalature of Gumbel softmax.
         scale_logits: scale factor of logits. NOTE: if this value is too small, Gumbel softmax does not work instead of thevalue of tau.
     """
@@ -30,6 +31,18 @@ def logits_to_index(
     return torch.matmul(
         index_h_onehot.unsqueeze(-1), index_w_onehot.unsqueeze(-2)
     )  # (B,H,W)
+
+
+def index_to_basis(index: torch.FloatTensor) -> torch.FloatTensor:
+    """
+    convert index to Fourier basis by 2D FFT.
+    in order to apply 2D FFT, dim argument of torch.fft.irfftn should be =(-2,-1).
+
+    Args
+        index: its shape should be (B,H,W//2+1).
+    """
+    _, h, _ = index.size()
+    return torch.fft.irfftn(index, s=(h, h), dim=(-2, -1))
 
 
 class FourierAttack(AttackWrapper):
@@ -52,5 +65,15 @@ class FourierAttack(AttackWrapper):
         if self.num_iteration:
             pass
 
-    def _run(self, pixel_model: torch.nn.Module):
+    def _run(
+        self,
+        pixel_model: torch.nn.Module,
+        logits_h: torch.FloatTensor,
+        logits_w: torch.FloatTensor,
+        target: torch.Tensor,
+    ):
         pass
+
+        for it in range(self.num_iteration):
+            loss = self.criterion(logit, target)
+            loss.backward()
