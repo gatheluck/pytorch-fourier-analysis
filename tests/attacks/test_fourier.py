@@ -4,10 +4,10 @@ import sys
 import torch
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from pytorch_fourier_analysis.attacks import logits_to_index, index_to_basis
+from pytorch_fourier_analysis.attacks import logit_to_index, index_to_basis
 
 
-class TestLogitsToIndex:
+class TestLogitToIndex:
     def test_obvious_input(self):
         batch_size = 8
         s = 4
@@ -28,8 +28,8 @@ class TestLogitsToIndex:
         index_ans = torch.matmul(
             index_h_onehot.unsqueeze(-1), index_w_onehot.unsqueeze(-2)
         )
-        assert logits_to_index(
-            index_h_onehot + noise, index_w_onehot + noise, scale_logits=10.0
+        assert logit_to_index(
+            index_h_onehot + noise, index_w_onehot + noise, scale_logit=10.0
         ).equal(index_ans)
 
     def test_grad(self):
@@ -38,28 +38,28 @@ class TestLogitsToIndex:
         noise = 0.01
         index_h = torch.randint(0, s, (3 * batch_size,))
         index_w = torch.randint(0, s, (3 * batch_size,))
-        logits_h = (
+        logit_h = (
             torch.nn.functional.one_hot(index_h, num_classes=s)
             .float()
             .view(batch_size, 3, s)
             + noise
         )  # (B,3,H)
-        logits_w = (
+        logit_w = (
             torch.nn.functional.one_hot(index_w, num_classes=s)
             .float()
             .view(batch_size, 3, s)
             + noise
         )  # (B,3,W)
-        logits_h.requires_grad_()
-        logits_w.requires_grad_()
+        logit_h.requires_grad_()
+        logit_w.requires_grad_()
 
-        index = logits_to_index(logits_h, logits_w, scale_logits=10.0)
+        index = logit_to_index(logit_h, logit_w, scale_logit=10.0)
 
         pseudo_loss = index.sum()
         pseudo_loss.backward()
 
-        assert logits_h.grad is not None
-        assert logits_w.grad is not None
+        assert logit_h.grad is not None
+        assert logit_w.grad is not None
 
 
 class TestIndexToBasis:

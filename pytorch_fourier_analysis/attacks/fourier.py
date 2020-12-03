@@ -4,28 +4,28 @@ import torch.fft
 from .attack import AttackWrapper
 
 
-def logits_to_index(
-    logits_h: torch.FloatTensor,
-    logits_w: torch.FloatTensor,
+def logit_to_index(
+    logit_h: torch.FloatTensor,
+    logit_w: torch.FloatTensor,
     tau: float = 1.0,
-    scale_logits: float = 5.0,
+    scale_logit: float = 5.0,
 ) -> torch.FloatTensor:
     """
-    convert logits to index using gumbel softmax.
+    convert logit to index using gumbel softmax.
     the shape of returned index is (B,3,H,W).
 
     Args
-        logits_h: logits of fourier basis about hight. its shape should be (B,3,H).
-        logits_h: logits of fourier basis about width. its shape should be (B,3,W) or (B,3,W//2+1)).
+        logit_h: logit of fourier basis about hight. its shape should be (B,3,H).
+        logit_h: logit of fourier basis about width. its shape should be (B,3,W) or (B,3,W//2+1)).
         tau: tempalature of Gumbel softmax.
-        scale_logits: scale factor of logits. NOTE: if this value is too small, Gumbel softmax does not work instead of thevalue of tau.
+        scale_logit: scale factor of logit. NOTE: if this value is too small, Gumbel softmax does not work instead of thevalue of tau.
     """
     # apply gumbel softmax with "straight-through" trick.
     index_h_onehot = torch.nn.functional.gumbel_softmax(
-        logits_h * scale_logits, tau=tau, hard=True
+        logit_h * scale_logit, tau=tau, hard=True
     )
     index_w_onehot = torch.nn.functional.gumbel_softmax(
-        logits_w * scale_logits, tau=tau, hard=True
+        logit_w * scale_logit, tau=tau, hard=True
     )
 
     return torch.matmul(
@@ -68,12 +68,15 @@ class FourierAttack(AttackWrapper):
     def _run(
         self,
         pixel_model: torch.nn.Module,
-        logits_h: torch.FloatTensor,
-        logits_w: torch.FloatTensor,
+        logit_h: torch.FloatTensor,
+        logit_w: torch.FloatTensor,
         target: torch.Tensor,
     ):
-        pass
+        index = logit_to_index(logit_h, logit_w, scale_logit=10.0)
+        basis = index_to_basis(index)
 
-        for it in range(self.num_iteration):
-            loss = self.criterion(logit, target)
-            loss.backward()
+        # logit =
+
+        # for it in range(self.num_iteration):
+        #     loss = self.criterion(logit, target)
+        #     loss.backward()
