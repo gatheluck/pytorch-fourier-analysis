@@ -1,5 +1,10 @@
+import random
+from typing import Literal, Tuple, Union
+
 import torch
 import torch.fft
+from torch.nn.modules.loss import _Loss
+from torch.types import _device
 
 from .attack import AttackWrapper
 
@@ -42,12 +47,33 @@ def index_to_basis(index: torch.FloatTensor) -> torch.FloatTensor:
         index: its shape should be (B,3,H,W//2+1).
     """
     _, _, h, _ = index.size()
-    return torch.fft.irfftn(index, s=(h, h), dim=(-2, -1))
+    basis = torch.fft.irfftn(index, s=(h, h), dim=(-2, -1))
+    return basis / basis.norm(dim=(-2, -1))[:, :, None, None]
+
+
+norm_type = Literal["linf"]
 
 
 class FourierAttack(AttackWrapper):
-    def __init__(self, num_iteration: int):
+    def __init__(
+        self,
+        input_size: int,
+        mean: Tuple[float],
+        std: Tuple[float],
+        num_iteration: int,
+        norm: norm_type,
+        scale_eps: bool,
+        scale_each: bool,
+        avoid_target: bool,
+        criterion: _Loss,
+        device: Union[_device, str, None],
+        scale_logit=10.0,
+    ):
+        super().__init__(input_size=input_size, mean=mean, std=std, device=device)
         self.num_iteration = num_iteration
+        self.norm = norm
+        self.criterion = criterion
+        self.scale_logit = scale_logit
 
     def _forward(
         self,
@@ -58,25 +84,89 @@ class FourierAttack(AttackWrapper):
         """
         Return perturbed input in pixel space [0,255]
         """
+        # if scale_eps is True, change eps adaptively.
+        # this usually improve robustness against wide range of attack
+        if self.scale_eps:
+            if self.scale_each:
+                rand = torch.rand(pixel_x.size(0), device=self.device)  # (B)
+            else:
+                rand = random.random() * torch.ones(
+                    pixel_x.size(0), device=self.device
+                )
+            base_eps = rand.mul(self.eps_max)  # (B)
+            step_size = rand.mul(self.step_size)  # (B)
+        else:
+            base_eps = self.eps_max * torch.ones(
+                pixel_x.size(0), device=self.device
+            )  # (B)
+            step_size = self.step_size * torch.ones(
+                pixel_x.size(0), device=self.device
+            )  # (B)
 
         # init delta (=fourier basis)
+        pixel_input = pixel_x.detach()
+        pixel_input.requires_grad_()
+        logit_h, logit_w = init_logit()
 
-        # compute delta in pixel space
-        if self.num_iteration:
-            pass
+        # compute basis in pixel space
+        if self.num_iteration:  # run iteration
+            pixel_basis = self._run(pixel_model, pixel_input, logit_h, logit_w, target, base_eps, step_size)
+        else:  # if self.num_iteration is 0, return just initialization result
+            index = logit_to_index(logit_h, logit_w, scale_logit=self.scale_logit)
+            pixel_basis = base_eps[:, None, None, None] * index_to_basis(index)
+
+            pixel_basis.data = torch.clamp(pixel_input.data + pixel_basis.data, 0.0, 255.0) - pixel_input.data
+
+        # NOTE: this return is in PIXEL SPACE (=[0,255])
+        return pixel_input + pixel_basis
 
     def _run(
         self,
         pixel_model: torch.nn.Module,
+        pixel_input: torch.FloatTensor,
         logit_h: torch.FloatTensor,
         logit_w: torch.FloatTensor,
         target: torch.Tensor,
-    ):
-        index = logit_to_index(logit_h, logit_w, scale_logit=10.0)
-        basis = index_to_basis(index)
+        eps: torch.Tensor,
+        step_size: torch.FloatTensor,
+        scale_logit: float
+    ) -> torch.FloatTensor:
+        index = logit_to_index(logit_h, logit_w, scale_logit)
+        pixel_basis = eps[:, None, None, None] * index_to_basis(index)
 
-        # logit =
+        logit = pixel_model(pixel_input + pixel_basis)
 
-        # for it in range(self.num_iteration):
-        #     loss = self.criterion(logit, target)
-        #     loss.backward()
+        for it in range(self.num_iteration):
+            loss = self.criterion(logit, target)
+            loss.backward()
+
+            if self.avoid_target:
+                grad_h = logit_h.grad.data  # to avoid target, increase the loss
+                grad_w = logit_w.grad.data  # to avoid target, increase the loss
+            else:
+                grad_h = -logit_h.grad.data  # to hit target, decrease the loss
+                grad_w = -logit_w.grad.data  # to hit target, decrease the loss
+
+            if self.norm == "linf":
+                grad_sign_h = grad_h.sign()
+                grad_sign_w = grad_w.sign()
+
+                logit_h.data = logit_h.data + step_size[:, None, None] * grad_sign_h
+                logit_w.data = logit_w.data + step_size[:, None, None] * grad_sign_w
+
+                # normalize logits
+                logit_h.data = torch.clamp(logit_h.data, 0.0, 1.0)
+                logit_w.data = torch.clamp(logit_w.data, 0.0, 1.0)
+
+                # update basis
+                index.data = logit_to_index(logit_h.data, logit_w.data, scale_logit)
+                pixel_basis.data = eps[:, None, None, None] * index_to_basis(index.data)
+                pixel_basis.data = torch.clamp(pixel_input.data + pixel_basis.data, 0.0, 255.0) - pixel_input.data
+            else:
+                raise NotImplementedError
+
+            if it != self.num_iteration - 1:  # final iterarion
+                logit = pixel_model(pixel_input + pixel_basis)
+                pixel_basis.grad.data.zero_()
+
+        return pixel_basis
